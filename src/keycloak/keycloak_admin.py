@@ -676,7 +676,7 @@ class KeycloakAdmin:
         )
         raise_error_from_response(data_raw, KeycloakPostError, expected_codes=[201])
         _last_slash_idx = data_raw.headers["Location"].rindex("/")
-        return data_raw.headers["Location"][_last_slash_idx + 1 :]  # noqa: E203
+        return data_raw.headers["Location"][_last_slash_idx + 1:]  # noqa: E203
 
     def users_count(self, query=None):
         """Count users.
@@ -1196,9 +1196,37 @@ class KeycloakAdmin:
         )
         try:
             _last_slash_idx = data_raw.headers["Location"].rindex("/")
-            return data_raw.headers["Location"][_last_slash_idx + 1 :]  # noqa: E203
+            return data_raw.headers["Location"][_last_slash_idx + 1:]  # noqa: E203
         except KeyError:
             return
+
+    def move_group(self, payload, target_group_id=None):
+        """Moves a group into another group, or root level if target_group is unspecified
+
+        GroupRepresentation
+        https://www.keycloak.org/docs-api/18.0/rest-api/#_grouprepresentation
+
+        :param payload: GroupRepresentation of group to move
+        :type payload: dict
+        :param target_group_id: Target group to move group into.
+        :type target_group_id: str
+
+        :return: Http response
+        :rtype: bytes
+        """
+
+        if target_group_id == None:
+            params_path = {"realm-name": self.realm_name}
+            data_raw = self.raw_put(
+                urls_patterns.URL_ADMIN_GROUPS.format(**params_path), data=json.dumps(payload)
+            )
+        else:
+            params_path = {"realm-name": self.realm_name, "id": target_group_id}
+            data_raw = self.raw_put(
+                urls_patterns.URL_ADMIN_GROUP_CHILD.format(**params_path), data=json.dumps(payload)
+            )
+
+        return raise_error_from_response(data_raw, KeycloakPutError, expected_codes=[204])
 
     def update_group(self, group_id, payload):
         """Update group, ignores subgroups.
@@ -1566,7 +1594,7 @@ class KeycloakAdmin:
             data_raw, KeycloakPostError, expected_codes=[201], skip_exists=skip_exists
         )
         _last_slash_idx = data_raw.headers["Location"].rindex("/")
-        return data_raw.headers["Location"][_last_slash_idx + 1 :]  # noqa: E203
+        return data_raw.headers["Location"][_last_slash_idx + 1:]  # noqa: E203
 
     def update_client(self, client_id, payload):
         """Update a client.
@@ -1800,7 +1828,7 @@ class KeycloakAdmin:
             data_raw, KeycloakPostError, expected_codes=[201], skip_exists=skip_exists
         )
         _last_slash_idx = data_raw.headers["Location"].rindex("/")
-        return data_raw.headers["Location"][_last_slash_idx + 1 :]  # noqa: E203
+        return data_raw.headers["Location"][_last_slash_idx + 1:]  # noqa: E203
 
     def add_composite_client_roles_to_role(self, client_role_id, role_name, roles):
         """Add composite roles to client role.
@@ -1941,7 +1969,7 @@ class KeycloakAdmin:
             data_raw, KeycloakPostError, expected_codes=[201], skip_exists=skip_exists
         )
         _last_slash_idx = data_raw.headers["Location"].rindex("/")
-        return data_raw.headers["Location"][_last_slash_idx + 1 :]  # noqa: E203
+        return data_raw.headers["Location"][_last_slash_idx + 1:]  # noqa: E203
 
     def get_realm_role(self, role_name):
         """Get realm role by role name.
@@ -2797,7 +2825,7 @@ class KeycloakAdmin:
             data_raw, KeycloakPostError, expected_codes=[201], skip_exists=skip_exists
         )
         _last_slash_idx = data_raw.headers["Location"].rindex("/")
-        return data_raw.headers["Location"][_last_slash_idx + 1 :]  # noqa: E203
+        return data_raw.headers["Location"][_last_slash_idx + 1:]  # noqa: E203
 
     def update_client_scope(self, client_scope_id, payload):
         """Update a client scope.
@@ -3162,7 +3190,7 @@ class KeycloakAdmin:
         )
         raise_error_from_response(data_raw, KeycloakPostError, expected_codes=[201])
         _last_slash_idx = data_raw.headers["Location"].rindex("/")
-        return data_raw.headers["Location"][_last_slash_idx + 1 :]  # noqa: E203
+        return data_raw.headers["Location"][_last_slash_idx + 1:]  # noqa: E203
 
     def get_component(self, component_id):
         """Get representation of the component.
