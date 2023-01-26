@@ -1217,12 +1217,12 @@ class KeycloakAdmin:
 
         if target_group_id == None:
             params_path = {"realm-name": self.realm_name}
-            data_raw = self.raw_put(
+            data_raw = self.raw_post(
                 urls_patterns.URL_ADMIN_GROUPS.format(**params_path), data=json.dumps(payload)
             )
         else:
             params_path = {"realm-name": self.realm_name, "id": target_group_id}
-            data_raw = self.raw_put(
+            data_raw = self.raw_post(
                 urls_patterns.URL_ADMIN_GROUP_CHILD.format(**params_path), data=json.dumps(payload)
             )
 
