@@ -54,11 +54,11 @@ def test_keycloak_admin_init(env):
     :type env: KeycloakTestEnv
     """
     admin = KeycloakAdmin(
-        server_url=f"http://{env.KEYCLOAK_HOST}:{env.KEYCLOAK_PORT}",
+        server_url=f"http://{env.KEYCLOAK_HOST}:{env.KEYCLOAK_PORT}/auth",
         username=env.KEYCLOAK_ADMIN,
         password=env.KEYCLOAK_ADMIN_PASSWORD,
     )
-    assert admin.server_url == f"http://{env.KEYCLOAK_HOST}:{env.KEYCLOAK_PORT}", admin.server_url
+    assert admin.server_url == f"http://{env.KEYCLOAK_HOST}:{env.KEYCLOAK_PORT}/auth", admin.server_url
     assert admin.realm_name == "master", admin.realm_name
     assert isinstance(admin.connection, ConnectionManager), type(admin.connection)
     assert admin.client_id == "admin-cli", admin.client_id
@@ -74,7 +74,7 @@ def test_keycloak_admin_init(env):
     assert admin.token
 
     admin = KeycloakAdmin(
-        server_url=f"http://{env.KEYCLOAK_HOST}:{env.KEYCLOAK_PORT}",
+        server_url=f"http://{env.KEYCLOAK_HOST}:{env.KEYCLOAK_PORT}/auth",
         username=env.KEYCLOAK_ADMIN,
         password=env.KEYCLOAK_ADMIN_PASSWORD,
         realm_name=None,
@@ -82,7 +82,7 @@ def test_keycloak_admin_init(env):
     )
     assert admin.token
     admin = KeycloakAdmin(
-        server_url=f"http://{env.KEYCLOAK_HOST}:{env.KEYCLOAK_PORT}",
+        server_url=f"http://{env.KEYCLOAK_HOST}:{env.KEYCLOAK_PORT}/auth",
         username=env.KEYCLOAK_ADMIN,
         password=env.KEYCLOAK_ADMIN_PASSWORD,
         realm_name=None,
@@ -107,7 +107,7 @@ def test_keycloak_admin_init(env):
     )
     secret = admin.generate_client_secrets(client_id=admin.get_client_id("authz-client"))
     assert KeycloakAdmin(
-        server_url=f"http://{env.KEYCLOAK_HOST}:{env.KEYCLOAK_PORT}",
+        server_url=f"http://{env.KEYCLOAK_HOST}:{env.KEYCLOAK_PORT}/auth",
         user_realm_name="authz",
         client_id="authz-client",
         client_secret_key=secret["value"],
@@ -116,7 +116,7 @@ def test_keycloak_admin_init(env):
 
     assert (
         KeycloakAdmin(
-            server_url=f"http://{env.KEYCLOAK_HOST}:{env.KEYCLOAK_PORT}",
+            server_url=f"http://{env.KEYCLOAK_HOST}:{env.KEYCLOAK_PORT}/auth",
             username=None,
             password=None,
             client_secret_key=None,
@@ -545,6 +545,29 @@ def test_groups(admin: KeycloakAdmin, user: str):
     # Test create subgroups
     subgroup_id_1 = admin.create_group(payload={"name": "subgroup-1"}, parent=group_id)
     subgroup_id_2 = admin.create_group(payload={"name": "subgroup-2"}, parent=group_id)
+
+    # Test group move
+    group_container1_id = admin.create_group(payload={"name": "container1"})
+    group_container2_id = admin.create_group(payload={"name": "container2"})
+
+    group_contained_id = admin.create_group(
+        payload={"name": "child-1"}, parent=group_container1_id)
+
+    admin.move_group(
+        payload={
+            "name": "child-1",
+            "id": group_contained_id
+        },
+        target_group_id=group_container2_id
+    )
+
+    assert len(admin.get_group(group_container1_id)["subGroups"]) is 0
+    assert len(admin.get_group(group_container2_id)["subGroups"]) is 1
+    assert admin.get_group(group_container2_id)["subGroups"][0]["id"] == group_contained_id
+
+    admin.delete_group(group_contained_id)
+    admin.delete_group(group_container1_id)
+    admin.delete_group(group_container2_id)
 
     # Test create group fail
     with pytest.raises(KeycloakPostError) as err:
